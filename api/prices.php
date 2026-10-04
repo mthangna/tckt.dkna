@@ -75,7 +75,8 @@ $total = (int)$st->fetchColumn();
 $pages = max(1, (int)ceil($total / $per));
 $page = min($page, $pages);
 $offset = ($page - 1) * $per;
-$st = db()->prepare("SELECT * FROM price_items WHERE $w ORDER BY (equiv_code IS NULL), equiv_code, name, effective_from DESC LIMIT $per OFFSET $offset");
+$codeCol = $cat === 'khac' ? 'equiv_code' : 'tech_code';
+$st = db()->prepare("SELECT * FROM price_items WHERE $w ORDER BY ($codeCol IS NULL), $codeCol, name, effective_from DESC LIMIT $per OFFSET $offset");
 $st->execute($args);
 
 json_out([

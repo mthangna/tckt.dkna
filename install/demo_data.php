@@ -5,10 +5,11 @@ declare(strict_types=1);
 function install_demo_data(int $adminId): void
 {
     $pdo = db();
-    $pw = password_hash('demo1234', PASSWORD_DEFAULT);
+    $pw = password_hash(DEMO_PASSWORD, PASSWORD_DEFAULT);
     $u = $pdo->prepare('INSERT IGNORE INTO users (username, password_hash, full_name, role) VALUES (?,?,?,?)');
-    $u->execute(['dieuhanh', $pw, 'Nguyễn Thị Điều Hành', 'mod']);
-    $u->execute(['ketoan', $pw, 'Trần Văn Kế Toán', 'user']);
+    foreach (demo_accounts() as [$name, $full, $role]) {
+        $u->execute([$name, $pw, $full, $role]);
+    }
 
     $pdo->prepare('INSERT INTO bank_accounts (bank_bin, bank_name, account_no, account_name, is_default) VALUES (?,?,?,?,1)')
         ->execute(['970418', 'BIDV', '1234567890', 'BENH VIEN HUU NGHI DA KHOA NGHE AN']);
@@ -77,7 +78,7 @@ function install_demo_data(int $adminId): void
     $i = 0;
     foreach ($yc as [$name, $unit, $price]) {
         $i++;
-        $ins->execute(['yeucau', sprintf('YC%03d', $i), null, $name, vn_unaccent($name), $unit, $price, $qdYc, '2026-03-10', '2026-04-01', null]);
+        $ins->execute(['yeucau', sprintf('YC%03d', $i), sprintf('KTYC%03d', $i), $name, vn_unaccent($name), $unit, $price, $qdYc, '2026-03-10', '2026-04-01', null]);
     }
     $qdK = 'Quyết định số 890/QĐ-BV của Giám đốc Bệnh viện (mẫu)';
     $khac = [

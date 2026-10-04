@@ -6,9 +6,18 @@ declare(strict_types=1);
  * Quy tắc khớp: nội dung chuyển khoản (đã bỏ dấu, bỏ khoảng trắng) có chứa nội dung của yêu cầu
  * VÀ số tiền bằng đúng số tiền yêu cầu. Nếu nhiều yêu cầu cùng khớp → chọn yêu cầu tạo sớm nhất.
  */
-function payment_content_for(string $treatmentCode): string
+/** Độ dài tối đa nội dung chuyển khoản (đủ ngắn để mọi app ngân hàng giữ nguyên) */
+const PAYMENT_CONTENT_MAX = 70;
+
+/** Nội dung chuyển khoản: "<mã điều trị> <HO TEN KHONG DAU>", cắt bớt tên ở ranh giới từ nếu quá dài */
+function payment_content_for(string $treatmentCode, string $patientName): string
 {
-    return transfer_text(setting('qr_prefix', 'DKNA') . ' ' . $treatmentCode);
+    $s = transfer_text($treatmentCode . ' ' . $patientName);
+    if (strlen($s) > PAYMENT_CONTENT_MAX) {
+        $s = substr($s, 0, PAYMENT_CONTENT_MAX + 1);
+        $s = rtrim(substr($s, 0, (int)strrpos($s, ' ')));
+    }
+    return $s;
 }
 
 /** @return array{id:int, duplicate:bool, matched:?int} */
@@ -39,12 +48,23 @@ function match_bank_txn(int $txnId): ?int
     if ($haystack === '') {
         return null;
     }
-    $st = $pdo->prepare("SELECT id, transfer_content FROM payment_requests WHERE status = 'pending' AND amount = ? ORDER BY created_at ASC, id ASC");
+    $st = $pdo->prepare("SELECT id, treatment_code, transfer_content FROM payment_requests WHERE status = 'pending' AND amount = ? ORDER BY created_at ASC, id ASC");
     $st->execute([$t['amount']]);
-    foreach ($st as $pr) {
+    $rows = $st->fetchAll();
+    // Ưu tiên khớp đủ nội dung (mã điều trị + họ tên)
+    foreach ($rows as $pr) {
         $needle = str_replace(' ', '', (string)$pr['transfer_content']);
         if ($needle !== '' && str_contains($haystack, $needle)) {
             mark_paid((int)$pr['id'], $txnId, 'Tự động khớp (' . $t['source'] . ')');
+            return (int)$pr['id'];
+        }
+    }
+    // Ngân hàng của người chuyển có thể cắt bớt/đổi tên: chấp nhận khi mã điều trị đứng thành từ riêng
+    $words = ' ' . transfer_text((string)$t['content']) . ' ';
+    foreach ($rows as $pr) {
+        $code = (string)$pr['treatment_code'];
+        if ($code !== '' && str_contains($words, ' ' . $code . ' ')) {
+            mark_paid((int)$pr['id'], $txnId, 'Tự động khớp theo mã điều trị (' . $t['source'] . ')');
             return (int)$pr['id'];
         }
     }

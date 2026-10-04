@@ -16,7 +16,15 @@ foreach (glob($tmpDir . '/import_*.json') ?: [] as $f) {
 }
 
 if (get('template') === '1') {
-    Xlsx::download('mau_danh_muc_gia.xlsx',
+    if (get('cat') === 'khac') {
+        Xlsx::download('mau_danh_muc_gia_dich_vu_khac.xlsx',
+            ['STT', 'Mã dịch vụ', 'Tên dịch vụ', 'Đơn vị tính', 'Đơn giá', 'Quyết định', 'Ngày ban hành', 'Ngày áp dụng', 'Ghi chú'],
+            [
+                [1, 'DVK001', 'Trông giữ xe máy', 'lượt', 5000, 'Quyết định số .../QĐ-BV', '15/06/2026', '01/07/2026', ''],
+                [2, 'DVK002', 'Sao y bệnh án', 'bộ', 50000, '', '', '', 'Để trống quyết định/ngày → dùng giá trị mặc định khi tải lên'],
+            ]);
+    }
+    Xlsx::download('mau_danh_muc_gia_kcb.xlsx',
         ['STT', 'Mã tương đương', 'Mã kỹ thuật', 'Tên dịch vụ', 'Đơn vị tính', 'Đơn giá', 'Quyết định', 'Ngày ban hành', 'Ngày áp dụng', 'Ghi chú'],
         [
             [1, '02.0001.0001', 'KT00001', 'Khám Nội', 'lần', 38700, 'Quyết định số .../QĐ-SYT', '15/06/2026', '01/07/2026', ''],
@@ -45,7 +53,7 @@ if (is_post()) {
             flash('danger', 'File quá lớn (tối đa 10 MB).');
         } else {
             try {
-                $parsed = PriceImport::parse($file['tmp_name'], $ext, $defaults);
+                $parsed = PriceImport::parse($file['tmp_name'], $ext, $defaults, $cat);
                 $plan = PriceImport::plan($cat, $parsed['rows']);
                 $token = bin2hex(random_bytes(12));
                 file_put_contents("$tmpDir/import_$token.json", json_encode([
@@ -113,11 +121,11 @@ if ($preview):
     <?php endif; ?>
     <div class="table-responsive" style="max-height:420px">
       <table class="table table-sm">
-        <thead><tr><th>Dòng</th><th>Thao tác</th><th>Mã TĐ</th><th>Tên dịch vụ</th><th class="num">Giá cũ</th><th class="num">Giá mới</th><th>Áp dụng từ</th><th>Ghi chú</th></tr></thead>
+        <thead><tr><th>Dòng</th><th>Thao tác</th><th><?= $preview['category'] === 'khac' ? 'Mã DV' : 'Mã KT' ?></th><th>Tên dịch vụ</th><th class="num">Giá cũ</th><th class="num">Giá mới</th><th>Áp dụng từ</th><th>Ghi chú</th></tr></thead>
         <tbody>
         <?php foreach (array_slice(array_filter($preview['plan']['items'], fn($p) => $p['action'] !== 'same'), 0, 500) as $p): $r = $p['row']; ?>
           <tr><td><?= (int)$r['row'] ?></td><td><span class="badge text-bg-<?= $actionLabel[$p['action']][0] ?>"><?= $actionLabel[$p['action']][1] ?></span></td>
-            <td class="small"><?= e($r['equiv_code']) ?></td><td><?= e($r['name']) ?></td>
+            <td class="small"><?= e($preview['category'] === 'khac' ? $r['equiv_code'] : $r['tech_code']) ?></td><td><?= e($r['name']) ?></td>
             <td class="num"><?= isset($p['old_price']) ? money($p['old_price']) : '' ?></td><td class="num fw-semibold"><?= money($r['price']) ?></td>
             <td><?= vn_date($r['effective_from']) ?></td><td class="small text-danger"><?= e($p['reason'] ?? '') ?></td></tr>
         <?php endforeach; ?>
@@ -151,7 +159,7 @@ if ($preview):
               <?php foreach (price_categories() as $c): ?><option value="<?= $c ?>"><?= e(category_label($c)) ?></option><?php endforeach; ?>
             </select></div>
           <div class="mb-3"><label class="form-label">File Excel (.xlsx) hoặc CSV</label><input type="file" name="file" class="form-control" accept=".xlsx,.csv" required>
-            <div class="form-text"><a href="?template=1"><i class="bi bi-download"></i> Tải file mẫu</a>. Cột được nhận diện theo tiêu đề, không cần đúng thứ tự.</div></div>
+            <div class="form-text">Tải file mẫu: <a href="?template=1"><i class="bi bi-download"></i> giá KCB (BHYT, theo yêu cầu)</a> · <a href="?template=1&amp;cat=khac"><i class="bi bi-download"></i> giá dịch vụ khác</a>. Cột được nhận diện theo tiêu đề, không cần đúng thứ tự.</div></div>
           <fieldset class="border rounded p-3 mb-3">
             <legend class="float-none w-auto px-2 fs-6 mb-0">Giá trị mặc định (dùng khi ô trong file để trống)</legend>
             <div class="mb-2"><label class="form-label small">Quyết định ban hành giá</label><input name="decision_name" class="form-control form-control-sm" placeholder="VD: Quyết định số 2345/QĐ-SYT ngày 15/06/2026"></div>

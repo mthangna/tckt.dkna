@@ -23,6 +23,19 @@ if (is_post()) {
         $error = 'Sai tên đăng nhập hoặc mật khẩu.';
     }
 }
+// Chế độ demo: hiện các tài khoản mẫu còn dùng mật khẩu mặc định (đổi mật khẩu thì tự ẩn)
+$demoAccounts = [];
+if (setting('demo_mode') === '1') {
+    $names = array_column(demo_accounts(), 0);
+    $st = db()->prepare('SELECT username, full_name, role, password_hash FROM users WHERE active = 1 AND username IN (' . implode(',', array_fill(0, count($names), '?')) . ')');
+    $st->execute($names);
+    foreach ($st->fetchAll() as $r) {
+        if (password_verify(DEMO_PASSWORD, $r['password_hash'])) {
+            $demoAccounts[array_search($r['username'], $names, true)] = $r;
+        }
+    }
+    ksort($demoAccounts);
+}
 render_header('Đăng nhập', ['bare' => true]);
 ?>
 <div class="card login-card shadow">
@@ -38,6 +51,25 @@ render_header('Đăng nhập', ['bare' => true]);
       <div class="mb-3"><label class="form-label">Mật khẩu</label><input name="password" type="password" class="form-control" required></div>
       <button class="btn btn-primary w-100"><i class="bi bi-box-arrow-in-right"></i> Đăng nhập</button>
     </form>
+    <?php if ($demoAccounts): ?>
+    <div class="alert alert-warning small mt-3 mb-0" id="demo-accounts">
+      <div class="fw-semibold mb-1"><i class="bi bi-cone-striped"></i> Bản demo – tài khoản dùng thử (bấm để điền):</div>
+      <table class="table table-sm table-borderless small mb-0">
+        <thead><tr><th>Tài khoản</th><th>Mật khẩu</th><th>Quyền</th></tr></thead>
+        <tbody>
+        <?php foreach ($demoAccounts as $a): ?>
+          <tr role="button" data-user="<?= e($a['username']) ?>"><td class="fw-semibold"><?= e($a['username']) ?></td><td><code><?= e(DEMO_PASSWORD) ?></code></td><td><?= e(role_label($a['role'])) ?></td></tr>
+        <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+    <script>
+    document.querySelectorAll('#demo-accounts tr[data-user]').forEach(tr => tr.addEventListener('click', () => {
+      document.querySelector('[name=username]').value = tr.dataset.user;
+      document.querySelector('[name=password]').value = <?= json_encode(DEMO_PASSWORD) ?>;
+    }));
+    </script>
+    <?php endif; ?>
   </div>
 </div>
 <?php render_footer();

@@ -14,7 +14,7 @@
     document.getElementById('v-formula').textContent = (k || 'km') + ' × ' + String(lpk).replace('.', ',') + ' lít × ' + (p ? App.money(p) : 'giá xăng');
   }
 
-  // Chọn "Khác" thì hiện ô nhập tay; chọn cơ sở tiếp nhận thì tự điền khoảng cách
+  // Chọn "Khác" thì hiện ô nhập tay; chọn nơi chuyển đi thì tự điền khoảng cách tới bệnh viện
   form.querySelectorAll('.fac-select').forEach(sel => {
     const other = form.querySelector('[name="' + sel.dataset.other + '"]');
     const sync = () => {
@@ -23,7 +23,7 @@
     };
     sel.addEventListener('change', () => {
       sync();
-      if (sel.id === 'to-select') {
+      if (sel.id === 'from-select') {
         const opt = sel.selectedOptions[0];
         if (opt && opt.dataset.km) { km.value = opt.dataset.km; recalc(); }
       }
@@ -37,8 +37,8 @@
 
   form.addEventListener('submit', (ev) => {
     const from = form.querySelector('[name=from_id]').value, to = form.querySelector('[name=to_id]').value;
-    if (from === '' || to === '') { ev.preventDefault(); App.toast('Chọn cơ sở chuyển đi và cơ sở tiếp nhận', 'warning'); return; }
-    if (from !== '0' && from === to) { ev.preventDefault(); App.toast('Cơ sở chuyển đi và tiếp nhận phải khác nhau', 'warning'); return; }
+    if (from === '' || to === '') { ev.preventDefault(); App.toast('Chọn nơi chuyển đi và nơi chuyển đến', 'warning'); return; }
+    if (from !== '0' && from === to) { ev.preventDefault(); App.toast('Nơi chuyển đi và nơi chuyển đến phải khác nhau', 'warning'); return; }
     const total = document.getElementById('v-total').textContent;
     if (!confirm('Lưu phiếu chi số tiền ' + total + ' và mở trang in?')) ev.preventDefault();
   });

@@ -35,9 +35,9 @@ if ($tab === 'voucher') {
         $w[] = 'v.status = ?';
         $a[] = $status === 'cancelled' ? 'cancelled' : 'active';
     }
-    if (($toFac = get('to_fac')) !== '') {
-        $w[] = 'v.to_facility LIKE ?';
-        $a[] = '%' . $toFac . '%';
+    if (($fromFac = get('from_fac')) !== '') {
+        $w[] = 'v.from_facility LIKE ?';
+        $a[] = '%' . $fromFac . '%';
     }
     $where = implode(' AND ', $w);
     $st = db()->prepare("SELECT v.*, us.full_name AS creator FROM transport_vouchers v JOIN users us ON us.id = v.created_by WHERE $where ORDER BY v.created_at, v.id");
@@ -54,13 +54,13 @@ if ($tab === 'voucher') {
             (int)array_sum(array_column(array_filter($rows, fn($r) => $r['status'] === 'active'), 'amount')), '', ''];
         audit('report_export', "voucher $from..$to");
         Xlsx::download("bao_cao_phieu_chi_van_chuyen_{$from}_{$to}.xlsx",
-            ['STT', 'Số phiếu', 'Ngày lập', 'Người bệnh', 'Mã điều trị', 'Số thẻ BHYT', 'Cơ sở chuyển đi', 'Cơ sở tiếp nhận', 'Km', 'Giá xăng', 'Số tiền', 'Người lập', 'Ghi chú'],
+            ['STT', 'Số phiếu', 'Ngày lập', 'Người bệnh', 'Mã điều trị', 'Số thẻ BHYT', 'Nơi chuyển đi', 'Nơi chuyển đến', 'Km', 'Giá xăng', 'Số tiền', 'Người lập', 'Ghi chú'],
             $out, 'BÁO CÁO CHI HỖ TRỢ VẬN CHUYỂN NGƯỜI BỆNH – ' . mb_strtoupper($range));
     }
     $active = array_filter($rows, fn($r) => $r['status'] === 'active');
     $byFac = [];
     foreach ($active as $r) {
-        $k = $r['to_facility'];
+        $k = $r['from_facility'];
         $byFac[$k]['n'] = ($byFac[$k]['n'] ?? 0) + 1;
         $byFac[$k]['amount'] = ($byFac[$k]['amount'] ?? 0) + (float)$r['amount'];
     }
@@ -138,7 +138,7 @@ render_header('Báo cáo');
     <?php if ($tab === 'voucher'): ?>
     <div class="col-sm-3 col-lg-2"><label class="form-label small">Trạng thái</label><select name="status" class="form-select form-select-sm">
       <?php foreach (['active' => 'Còn hiệu lực', 'cancelled' => 'Đã hủy', 'all' => 'Tất cả'] as $k => $l): ?><option value="<?= $k ?>" <?= get('status', 'active') === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
-    <div class="col-sm-4 col-lg-2"><label class="form-label small">Nơi tiếp nhận</label><input name="to_fac" class="form-control form-control-sm" value="<?= e(get('to_fac')) ?>"></div>
+    <div class="col-sm-4 col-lg-2"><label class="form-label small">Nơi chuyển đi</label><input name="from_fac" class="form-control form-control-sm" value="<?= e(get('from_fac')) ?>"></div>
     <?php elseif ($tab === 'qr'): ?>
     <div class="col-sm-3 col-lg-2"><label class="form-label small">Trạng thái</label><select name="status" class="form-select form-select-sm">
       <?php foreach (['all' => 'Tất cả', 'paid' => 'Đã nhận tiền', 'pending' => 'Chờ thanh toán', 'cancelled' => 'Đã hủy'] as $k => $l): ?><option value="<?= $k ?>" <?= get('status', 'all') === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
@@ -156,15 +156,15 @@ render_header('Báo cáo');
   <div class="col-md-4"><div class="card stat-card"><div class="card-body"><div class="label">Tổng quãng đường</div><div class="value"><?= km_text($sumKm) ?> km</div></div></div></div>
 </div>
 <div class="row g-3">
-  <div class="col-xl-4"><div class="card"><div class="card-header">Theo nơi tiếp nhận</div><div class="table-responsive"><table class="table table-sm mb-0">
+  <div class="col-xl-4"><div class="card"><div class="card-header">Theo nơi chuyển đi</div><div class="table-responsive"><table class="table table-sm mb-0">
     <thead><tr><th>Cơ sở</th><th class="num">Phiếu</th><th class="num">Số tiền</th></tr></thead>
     <tbody><?php foreach ($byFac as $k => $x): ?><tr><td class="small"><?= e($k) ?></td><td class="num"><?= $x['n'] ?></td><td class="num"><?= money($x['amount']) ?></td></tr><?php endforeach; ?></tbody>
   </table></div></div></div>
   <div class="col-xl-8"><div class="card"><div class="card-header">Chi tiết (<?= count($rows) ?> phiếu)</div><div class="table-responsive" style="max-height:520px"><table class="table table-sm table-hover mb-0">
-    <thead><tr><th>Số</th><th>Ngày</th><th>Người bệnh</th><th>Nơi tiếp nhận</th><th class="num">Km</th><th class="num">Số tiền</th><th>Người lập</th></tr></thead>
+    <thead><tr><th>Số</th><th>Ngày</th><th>Người bệnh</th><th>Nơi chuyển đi</th><th class="num">Km</th><th class="num">Số tiền</th><th>Người lập</th></tr></thead>
     <tbody><?php foreach (array_slice($rows, 0, 1000) as $r): ?>
-      <tr class="<?= $r['status'] === 'cancelled' ? 'text-muted text-decoration-line-through' : '' ?>"><td><a href="<?= e(url('voucher_print.php?id=' . $r['id'])) ?>"><?= e($r['voucher_no']) ?></a></td><td class="small text-nowrap"><?= vn_date($r['created_at'], true) ?></td>
-        <td><?= e($r['patient_name']) ?></td><td class="small"><?= e($r['to_facility']) ?></td><td class="num"><?= km_text($r['distance_km']) ?></td><td class="num"><?= money($r['amount']) ?></td><td class="small"><?= e($r['creator']) ?></td></tr>
+      <tr class="<?= $r['status'] === 'cancelled' ? 'text-muted text-decoration-line-through' : '' ?>"><td><a href="<?= e(url('payment_print.php?id=' . $r['id'])) ?>"><?= e($r['voucher_no']) ?></a></td><td class="small text-nowrap"><?= vn_date($r['created_at'], true) ?></td>
+        <td><?= e($r['patient_name']) ?></td><td class="small"><?= e($r['from_facility']) ?></td><td class="num"><?= km_text($r['distance_km']) ?></td><td class="num"><?= money($r['amount']) ?></td><td class="small"><?= e($r['creator']) ?></td></tr>
     <?php endforeach; if (!$rows): ?><tr><td colspan="7" class="text-center text-muted py-3">Không có dữ liệu</td></tr><?php endif; ?></tbody>
   </table></div></div></div>
 </div>

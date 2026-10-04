@@ -21,9 +21,10 @@
 
   function detailHtml(r) {
     const row = (k, v) => v ? '<dt>' + k + '</dt><dd>' + App.esc(v) + '</dd>' : '';
+    // Dịch vụ khác chỉ có mã dịch vụ (lưu ở equiv_code); dịch vụ KCB có mã kỹ thuật và mã tương đương
+    const codes = state.cat === 'khac' ? row('Mã dịch vụ', r.equiv_code) : row('Mã kỹ thuật', r.tech_code) + row('Mã tương đương', r.equiv_code);
     return '<dl>' + row('Quyết định', r.decision_name) + row('Ngày ban hành', r.decision_date) + row('Ngày áp dụng', r.effective_from) +
-      row('Hết hiệu lực từ', r.effective_to ? 'sau ngày ' + r.effective_to : '') + row('Mã tương đương', r.equiv_code) + row('Mã kỹ thuật', r.tech_code) +
-      row('Ghi chú', r.note) + '</dl>';
+      row('Hết hiệu lực từ', r.effective_to ? 'sau ngày ' + r.effective_to : '') + codes + row('Ghi chú', r.note) + '</dl>';
   }
 
   async function load() {
@@ -39,7 +40,7 @@
       } else {
         body.innerHTML = r.rows.map((x, i) =>
           '<tr class="price-row ' + (x.state === 'expired' ? 'expired' : '') + '" data-id="' + x.id + '" data-i="' + i + '">' +
-          '<td>' + (r.from + i) + '</td><td class="small">' + App.esc(x.equiv_code || '') + '</td>' +
+          '<td>' + (r.from + i) + '</td><td class="small">' + App.esc((state.cat === 'khac' ? x.equiv_code : x.tech_code) || '') + '</td>' +
           '<td class="name">' + App.esc(x.name) + STATE_BADGE[x.state] + '</td><td class="small">' + App.esc(x.unit || '') + '</td>' +
           '<td class="num fw-semibold">' + App.money(x.price) + '</td><td class="small">' + App.esc(x.effective_from) + '</td></tr>').join('');
       }
@@ -76,7 +77,9 @@
   document.getElementById('price-tabs').addEventListener('click', ev => {
     const b = ev.target.closest('button[data-cat]'); if (!b) return;
     document.querySelectorAll('#price-tabs .nav-link').forEach(x => x.classList.toggle('active', x === b));
-    state.cat = b.dataset.cat; state.page = 1; load();
+    state.cat = b.dataset.cat; state.page = 1;
+    document.getElementById('price-code-head').textContent = state.cat === 'khac' ? 'Mã dịch vụ' : 'Mã kỹ thuật';
+    load();
   });
   document.getElementById('price-q').addEventListener('input', App.debounce(ev => { state.q = ev.target.value.trim(); state.page = 1; load(); }, 300));
   document.getElementById('price-all').addEventListener('change', ev => { state.all = ev.target.checked; state.page = 1; load(); });

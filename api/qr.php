@@ -53,6 +53,9 @@ switch ($action) {
         if ($code === '' || strlen($code) > 20) {
             json_out(['ok' => false, 'error' => 'Mã điều trị bắt buộc, chỉ gồm chữ và số, tối đa 20 ký tự.'], 422);
         }
+        if ($name === '' || transfer_text($name) === '') {
+            json_out(['ok' => false, 'error' => 'Nhập họ tên người bệnh (dùng trong nội dung chuyển khoản).'], 422);
+        }
         if ($amount < 1000 || $amount > 9999999999) {
             json_out(['ok' => false, 'error' => 'Số tiền không hợp lệ (tối thiểu 1.000 đ).'], 422);
         }
@@ -62,9 +65,10 @@ switch ($action) {
         if (!$accId) {
             json_out(['ok' => false, 'error' => 'Chưa cấu hình tài khoản nhận tiền. Liên hệ quản trị/điều hành.'], 422);
         }
-        $content = payment_content_for($code);
+        $name = mb_strtoupper($name, 'UTF-8');
+        $content = payment_content_for($code, $name);
         db()->prepare('INSERT INTO payment_requests (treatment_code, patient_name, amount, transfer_content, bank_account_id, created_by) VALUES (?,?,?,?,?,?)')
-            ->execute([$code, $name ?: null, $amount, $content, $accId, $u['id']]);
+            ->execute([$code, $name, $amount, $content, $accId, $u['id']]);
         $id = (int)db()->lastInsertId();
         audit('qr_create', "#$id $code " . money($amount));
         json_out(['ok' => true, 'request' => present(load_request($id, $u))]);

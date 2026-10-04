@@ -22,11 +22,22 @@ final class PriceImport
         'note'           => ['ghi chu'],
     ];
 
+    /** Nhóm "dịch vụ khác": chỉ có Mã dịch vụ (lưu vào cột equiv_code), không có mã kỹ thuật */
+    public static function columnsFor(string $category): array
+    {
+        $cols = self::COLUMNS;
+        if ($category === 'khac') {
+            $cols['equiv_code'] = ['ma dich vu', 'ma dv'];
+            unset($cols['tech_code']);
+        }
+        return $cols;
+    }
+
     /** Đọc file, trả về ['rows' => [...], 'errors' => [...], 'columns' => [...]] */
-    public static function parse(string $path, string $ext, array $defaults): array
+    public static function parse(string $path, string $ext, array $defaults, string $category = 'bhyt'): array
     {
         $raw = $ext === 'csv' ? Xlsx::readCsv($path) : Xlsx::readRows($path);
-        [$headerIdx, $map] = self::detectHeader($raw);
+        [$headerIdx, $map] = self::detectHeader($raw, self::columnsFor($category));
         if ($headerIdx === null) {
             throw new RuntimeException('Không tìm thấy dòng tiêu đề. File cần có ít nhất cột "Tên dịch vụ" và "Đơn giá".');
         }
@@ -180,7 +191,7 @@ final class PriceImport
         return 'N:' . vn_unaccent((string)$r['name']);
     }
 
-    private static function detectHeader(array $raw): array
+    private static function detectHeader(array $raw, array $columns): array
     {
         foreach ($raw as $i => $line) {
             if ($i > 20) {
@@ -195,7 +206,7 @@ final class PriceImport
                 // Chọn trường có từ khoá khớp dài nhất (vd "Quyết định ban hành giá" → quyết định, không phải giá)
                 $best = null;
                 $bestLen = 0;
-                foreach (self::COLUMNS as $field => $keys) {
+                foreach ($columns as $field => $keys) {
                     foreach ($keys as $kw) {
                         if (strlen($kw) > $bestLen && preg_match('/(^|[^a-z0-9])' . preg_quote($kw, '/') . '([^a-z0-9]|$)/', $h)) {
                             $best = $field;

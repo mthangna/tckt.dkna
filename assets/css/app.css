@@ -40,3 +40,4 @@ body { background: #f2f5f9; font-size: .95rem; }
   .app-content { padding: 1rem; }
 }
 .popover.price-pop { pointer-events: none; }
+.acc-card { border: 1px solid #b6d4fe; background: #f1f7ff; border-radius: .5rem; padding: .6rem .8rem; line-height: 1.7; }

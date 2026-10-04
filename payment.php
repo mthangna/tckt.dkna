@@ -35,16 +35,16 @@ if (is_post()) {
         $km = (float)str_replace(',', '.', post('distance_km'));
         $price = has_role('mod') && post('fuel_price') !== '' ? (int)preg_replace('/\D/', '', post('fuel_price')) : (int)($fuel['price'] ?? 0);
         if ($patient === '') $err[] = 'Nhập họ tên người bệnh.';
-        if ($from === '' || $to === '') $err[] = 'Chọn hoặc nhập cơ sở chuyển đi và cơ sở tiếp nhận.';
-        if ($fromId && $toId && $fromId === $toId) $err[] = 'Cơ sở chuyển đi và tiếp nhận phải khác nhau.';
+        if ($from === '' || $to === '') $err[] = 'Chọn hoặc nhập nơi chuyển đi và nơi chuyển đến.';
+        if ($fromId && $toId && $fromId === $toId) $err[] = 'Nơi chuyển đi và nơi chuyển đến phải khác nhau.';
         if ($km <= 0 || $km > 5000) $err[] = 'Khoảng cách không hợp lệ.';
         if ($price < 5000) $err[] = 'Chưa có giá xăng hợp lệ. Liên hệ người điều hành để cài đặt giá xăng.';
         $insurance = strtoupper(preg_replace('/\s+/', '', post('insurance_no')));
         if ($insurance !== '' && !preg_match('/^[A-Z0-9]{10,15}$/', $insurance)) $err[] = 'Số thẻ BHYT không hợp lệ.';
         if ($err) {
-            $_SESSION['voucher_form'] = $_POST;
+            $_SESSION['payment_form'] = $_POST;
             flash('danger', implode(' ', $err));
-            redirect('voucher.php');
+            redirect('payment.php');
         }
         $amount = calc_amount($km, $price, $lpk, $rounding);
         $pdo = db();
@@ -68,7 +68,7 @@ if (is_post()) {
             throw $e;
         }
         audit('voucher_create', "#$id số $no $patient " . money($amount));
-        redirect('voucher_print.php?id=' . $id . '&print=1');
+        redirect('payment_print.php?id=' . $id . '&print=1');
     }
     if ($act === 'cancel') {
         require_role('mod');
@@ -84,12 +84,12 @@ if (is_post()) {
                 flash('success', 'Đã hủy phiếu chi.');
             }
         }
-        redirect('voucher.php');
+        redirect('payment.php');
     }
 }
 
-$old = $_SESSION['voucher_form'] ?? [];
-unset($_SESSION['voucher_form']);
+$old = $_SESSION['payment_form'] ?? [];
+unset($_SESSION['payment_form']);
 $homeId = 0;
 foreach ($facilities as $f) {
     if ($f['is_home']) { $homeId = (int)$f['id']; break; }
@@ -99,9 +99,11 @@ $listSql = 'SELECT v.*, us.full_name AS creator FROM transport_vouchers v JOIN u
 $recent = db()->query($listSql)->fetchAll();
 
 render_header('Phiếu chi hỗ trợ vận chuyển');
-$facOptions = function (int $selected) use ($facilities) {
+// Nơi chuyển đến mặc định là bệnh viện (cơ sở "là bệnh viện mình"); nơi chuyển đi là cơ sở khác
+$facOptions = function (int $selected, int $exclude = 0) use ($facilities) {
     $h = '<option value="">— Chọn cơ sở —</option>';
     foreach ($facilities as $f) {
+        if ($exclude && (int)$f['id'] === $exclude) continue;
         $h .= '<option value="' . (int)$f['id'] . '" data-km="' . e($f['distance_km'] !== null ? (string)(float)$f['distance_km'] : '') . '"' . ($selected === (int)$f['id'] ? ' selected' : '') . '>' . e($f['name']) . '</option>';
     }
     return $h . '<option value="0">Khác (nhập tay)...</option>';
@@ -120,12 +122,12 @@ $facOptions = function (int $selected) use ($facilities) {
             <div class="col-md-6"><label class="form-label">Số thẻ BHYT</label><input name="insurance_no" class="form-control text-uppercase" maxlength="15" value="<?= e($old['insurance_no'] ?? '') ?>"></div>
             <div class="col-md-6"><label class="form-label">Người nhận tiền <span class="small text-muted">(nếu khác người bệnh)</span></label><input name="receiver_name" class="form-control text-uppercase" value="<?= e($old['receiver_name'] ?? '') ?>"></div>
             <div class="col-12"><label class="form-label">Địa chỉ</label><input name="patient_address" class="form-control" value="<?= e($old['patient_address'] ?? '') ?>"></div>
-            <div class="col-md-6"><label class="form-label">Cơ sở chuyển đi <span class="text-danger">*</span></label>
-              <select name="from_id" class="form-select fac-select" data-other="from_other"><?= $facOptions((int)($old['from_id'] ?? $homeId)) ?></select>
+            <div class="col-md-6"><label class="form-label">Nơi chuyển đi <span class="text-danger">*</span></label>
+              <select name="from_id" class="form-select fac-select" data-other="from_other" id="from-select"><?= $facOptions((int)($old['from_id'] ?? 0), $homeId) ?></select>
               <input name="from_other" class="form-control mt-1" placeholder="Tên cơ sở chuyển đi" hidden></div>
-            <div class="col-md-6"><label class="form-label">Cơ sở tiếp nhận <span class="text-danger">*</span></label>
-              <select name="to_id" class="form-select fac-select" data-other="to_other" id="to-select"><?= $facOptions((int)($old['to_id'] ?? 0)) ?></select>
-              <input name="to_other" class="form-control mt-1" placeholder="Tên cơ sở tiếp nhận" hidden></div>
+            <div class="col-md-6"><label class="form-label">Nơi chuyển đến <span class="text-danger">*</span></label>
+              <select name="to_id" class="form-select fac-select" data-other="to_other" id="to-select"><?= $facOptions((int)($old['to_id'] ?? $homeId)) ?></select>
+              <input name="to_other" class="form-control mt-1" placeholder="Tên nơi chuyển đến" hidden></div>
             <div class="col-md-4"><label class="form-label">Khoảng cách (km) <span class="text-danger">*</span></label><input name="distance_km" id="v-km" type="number" step="0.1" min="0.1" class="form-control" required value="<?= e($old['distance_km'] ?? '') ?>"></div>
             <div class="col-md-4"><label class="form-label">Giá xăng (đ/lít)</label>
               <input name="fuel_price" id="v-price" class="form-control" data-money value="<?= $fuel ? money($fuel['price']) : '' ?>" <?= has_role('mod') ? '' : 'readonly' ?>>
@@ -147,15 +149,15 @@ $facOptions = function (int $selected) use ($facilities) {
     <div class="card">
       <div class="card-header d-flex justify-content-between"><span><i class="bi bi-clock-history"></i> Phiếu đã lập gần đây</span><a href="<?= e(url('reports.php?tab=voucher')) ?>" class="small">Xem báo cáo đầy đủ</a></div>
       <div class="table-responsive"><table class="table table-sm table-hover align-middle mb-0">
-        <thead><tr><th>Số</th><th>Ngày</th><th>Người bệnh</th><th>Nơi đến</th><th class="num">Km</th><th class="num">Số tiền</th><th></th></tr></thead>
+        <thead><tr><th>Số</th><th>Ngày</th><th>Người bệnh</th><th>Nơi chuyển đi</th><th class="num">Km</th><th class="num">Số tiền</th><th></th></tr></thead>
         <tbody>
         <?php foreach ($recent as $v): $cx = $v['status'] === 'cancelled'; ?>
           <tr class="<?= $cx ? 'text-muted text-decoration-line-through' : '' ?>">
             <td class="text-nowrap"><?= e($v['voucher_no']) ?></td><td class="text-nowrap small"><?= vn_date($v['created_at'], true) ?></td>
-            <td><?= e($v['patient_name']) ?></td><td class="small"><?= e($v['to_facility']) ?></td>
+            <td><?= e($v['patient_name']) ?></td><td class="small"><?= e($v['from_facility']) ?></td>
             <td class="num"><?= km_text($v['distance_km']) ?></td><td class="num fw-semibold"><?= money($v['amount']) ?></td>
             <td class="text-end text-nowrap">
-              <a class="btn btn-sm btn-light" href="<?= e(url('voucher_print.php?id=' . $v['id'])) ?>" title="Xem / in lại"><i class="bi bi-printer"></i></a>
+              <a class="btn btn-sm btn-light" href="<?= e(url('payment_print.php?id=' . $v['id'])) ?>" title="Xem / in lại"><i class="bi bi-printer"></i></a>
               <?php if (!$cx && has_role('mod')): ?>
               <button class="btn btn-sm btn-light text-danger" data-cancel="<?= (int)$v['id'] ?>" data-no="<?= e($v['voucher_no']) ?>" title="Hủy phiếu"><i class="bi bi-x-octagon"></i></button>
               <?php endif; ?>
@@ -171,4 +173,4 @@ $facOptions = function (int $selected) use ($facilities) {
 <script>
 window.VOUCHER = { lpk: <?= json_encode($lpk) ?>, rounding: <?= json_encode($rounding) ?> };
 </script>
-<?php render_footer(['assets/js/numwords.js', 'assets/js/voucher.js']);
+<?php render_footer(['assets/js/numwords.js', 'assets/js/payment.js']);

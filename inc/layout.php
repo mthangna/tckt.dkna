@@ -8,7 +8,7 @@ function nav_items(): array
         ['href' => 'index.php',        'icon' => 'speedometer2',   'label' => 'Tổng quan',             'role' => 'user'],
         ['href' => 'qr.php',           'icon' => 'qr-code',        'label' => 'Thanh toán QR',         'role' => 'user'],
         ['href' => 'prices.php',       'icon' => 'tags',           'label' => 'Tra cứu bảng giá',      'role' => 'user'],
-        ['href' => 'voucher.php',      'icon' => 'truck',          'label' => 'Phiếu chi vận chuyển',  'role' => 'user'],
+        ['href' => 'payment.php',      'icon' => 'truck',          'label' => 'Phiếu chi vận chuyển',  'role' => 'user'],
         ['href' => 'reports.php',      'icon' => 'bar-chart-line', 'label' => 'Báo cáo',               'role' => 'user'],
         ['href' => 'reconcile.php',    'icon' => 'arrow-left-right','label' => 'Đối soát ngân hàng',   'role' => 'mod'],
         ['section' => 'Cấu hình', 'role' => 'mod'],

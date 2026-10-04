@@ -48,7 +48,7 @@ render_header('Tổng quan');
   <?php foreach ([
       ['qr.php', 'qr-code', 'Thanh toán QR', 'Tạo mã VietQR cho người bệnh chuyển khoản; tự cập nhật khi tiền về.'],
       ['prices.php', 'tags', 'Tra cứu bảng giá', 'Giá dịch vụ KBCB BHYT, KCB theo yêu cầu và dịch vụ khác.'],
-      ['voucher.php', 'truck', 'Phiếu chi vận chuyển', 'Tính tiền hỗ trợ vận chuyển (0,2 lít xăng/km), lưu và in phiếu chi.'],
+      ['payment.php', 'truck', 'Phiếu chi vận chuyển', 'Tính tiền hỗ trợ vận chuyển (0,2 lít xăng/km), lưu và in phiếu chi.'],
       ['reports.php', 'bar-chart-line', 'Báo cáo', 'Thống kê, xuất Excel phiếu chi và các khoản thu qua QR.'],
   ] as [$href, $icon, $title, $desc]): ?>
   <div class="col-md-6 col-xl-3">

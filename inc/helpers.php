@@ -125,7 +125,6 @@ function settings_defaults(): array
         'org_name'          => 'BỆNH VIỆN HỮU NGHỊ ĐA KHOA NGHỆ AN',
         'org_dept'          => 'Phòng Tài chính Kế toán',
         'org_place'         => 'Nghệ An',
-        'qr_prefix'         => 'DKNA',
         'voucher_form_no'   => 'Mẫu số C41-BB',
         'voucher_book_no'   => '',
         'voucher_debit'     => '',
@@ -227,6 +226,17 @@ function transfer_text(string $s): string
     return preg_replace('/\s+/', ' ', trim($s));
 }
 
+/** Tài khoản mẫu tạo khi cài kèm dữ liệu demo (mật khẩu chung DEMO_PASSWORD) */
+const DEMO_PASSWORD = 'demo1234';
+function demo_accounts(): array
+{
+    return [
+        ['quantri', 'Lê Văn Quản Trị', 'admin'],
+        ['dieuhanh', 'Nguyễn Thị Điều Hành', 'mod'],
+        ['ketoan', 'Trần Văn Kế Toán', 'user'],
+    ];
+}
+
 function role_label(string $role): string
 {
     return ['admin' => 'Quản trị', 'mod' => 'Điều hành', 'user' => 'Người dùng'][$role] ?? $role;
@@ -239,6 +249,12 @@ function category_label(string $c): string
         'yeucau' => 'Giá dịch vụ KCB theo yêu cầu',
         'khac'   => 'Giá dịch vụ khác',
     ][$c] ?? $c;
+}
+
+/** Dịch vụ khác không có mã kỹ thuật/mã tương đương: dùng "Mã dịch vụ" (lưu ở cột equiv_code) */
+function price_code_label(string $c): string
+{
+    return $c === 'khac' ? 'Mã dịch vụ' : 'Mã kỹ thuật';
 }
 
 function price_categories(): array

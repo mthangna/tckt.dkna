@@ -22,7 +22,7 @@ render_header('Tra cứu bảng giá');
       <div class="col-md-5">
         <div class="input-group">
           <span class="input-group-text"><i class="bi bi-search"></i></span>
-          <input id="price-q" class="form-control" placeholder="Tìm theo tên (có dấu hoặc không dấu), mã tương đương, mã kỹ thuật...">
+          <input id="price-q" class="form-control" placeholder="Tìm theo tên (có dấu hoặc không dấu), mã kỹ thuật, mã tương đương, mã dịch vụ...">
         </div>
       </div>
       <div class="col-auto">
@@ -41,7 +41,7 @@ render_header('Tra cứu bảng giá');
     </div>
     <div class="table-responsive">
       <table class="table table-hover table-sm align-middle">
-        <thead><tr><th style="width:60px">STT</th><th style="width:150px">Mã tương đương</th><th>Tên dịch vụ</th><th style="width:80px">ĐVT</th><th class="num" style="width:140px">Đơn giá (đ)</th><th style="width:120px">Áp dụng từ</th></tr></thead>
+        <thead><tr><th style="width:60px">STT</th><th style="width:150px" id="price-code-head">Mã kỹ thuật</th><th>Tên dịch vụ</th><th style="width:80px">ĐVT</th><th class="num" style="width:140px">Đơn giá (đ)</th><th style="width:120px">Áp dụng từ</th></tr></thead>
         <tbody id="price-body"><tr><td colspan="6" class="text-center py-4 text-muted">Đang tải...</td></tr></tbody>
       </table>
     </div>

@@ -57,7 +57,7 @@ $detail = sprintf('Người bệnh %s%s%s. Chuyển từ %s đến %s, quãng đ
 </head>
 <body>
 <div class="toolbar">
-  <a href="<?= e(url('voucher.php')) ?>"><i class="bi bi-arrow-left"></i> Quay lại</a>
+  <a href="<?= e(url('payment.php')) ?>"><i class="bi bi-arrow-left"></i> Quay lại</a>
   <button class="primary" id="btn-print"><i class="bi bi-printer"></i> In phiếu</button>
   <span style="color:#667">Số <?= e($v['voucher_no']) ?> · đã in <?= (int)$v['print_count'] ?> lần<?= $v['status'] === 'cancelled' ? ' · <strong style="color:#c00">ĐÃ HỦY: ' . e($v['cancel_reason']) . '</strong>' : '' ?></span>
 </div>

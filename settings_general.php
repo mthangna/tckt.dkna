@@ -14,9 +14,6 @@ $fields = [
     'Tính tiền hỗ trợ vận chuyển' => [
         'liters_per_km' => 'Định mức (lít xăng / km)', 'amount_rounding' => 'Làm tròn số tiền đến (1 = đồng, 100, 1000)',
     ],
-    'Thanh toán QR' => [
-        'qr_prefix' => 'Tiền tố nội dung chuyển khoản (chữ in hoa không dấu)',
-    ],
 ];
 
 if (is_post()) {
@@ -31,9 +28,6 @@ if (is_post()) {
         foreach ($fields as $group) {
             foreach ($group as $k => $label) {
                 $v = (string)post($k);
-                if ($k === 'qr_prefix') {
-                    $v = substr(str_replace(' ', '', transfer_text($v)), 0, 10);
-                }
                 if ($k === 'liters_per_km' && (!is_numeric($v) || (float)$v <= 0 || (float)$v > 1)) {
                     flash('danger', 'Định mức lít/km không hợp lệ.');
                     redirect('settings_general.php');

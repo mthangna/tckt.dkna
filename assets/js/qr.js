@@ -86,6 +86,27 @@
     finally { btn.disabled = false; }
   });
 
+  // Xem trước nội dung chuyển khoản: mã điều trị + họ tên không dấu (giống quy tắc ở máy chủ)
+  const transferText = (v) => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'D')
+    .toUpperCase().replace(/[^A-Z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+  function previewContent() {
+    const el = document.getElementById('qr-content-preview');
+    if (!el || !form) return;
+    const code = form.elements['treatment_code'].value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    let s = transferText(code + ' ' + form.elements['patient_name'].value);
+    if (s.length > 70) { s = s.slice(0, 71); s = s.slice(0, s.lastIndexOf(' ')).trim(); }
+    el.textContent = s || 'mã điều trị + họ tên không dấu';
+  }
+  form?.addEventListener('input', previewContent);
+  const accSel = document.getElementById('qr-account');
+  accSel?.addEventListener('change', () => {
+    const o = accSel.selectedOptions[0];
+    const card = document.getElementById('acc-card');
+    card.querySelector('[data-acc=bank]').textContent = o.dataset.bank;
+    card.querySelector('[data-acc=name]').textContent = o.dataset.name;
+    card.querySelector('[data-acc=no]').textContent = o.dataset.no;
+  });
+
   document.getElementById('qr-list').addEventListener('click', async (ev) => {
     const tr = ev.target.closest('tr[data-id]');
     if (!tr) return;

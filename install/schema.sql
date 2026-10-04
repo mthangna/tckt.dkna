@@ -96,7 +96,7 @@ CREATE TABLE IF NOT EXISTS payment_requests (
   treatment_code VARCHAR(30) NOT NULL,
   patient_name VARCHAR(150) NULL,
   amount DECIMAL(15,0) NOT NULL,
-  transfer_content VARCHAR(50) NOT NULL,
+  transfer_content VARCHAR(100) NOT NULL,
   bank_account_id INT UNSIGNED NOT NULL,
   status ENUM('pending','paid','cancelled') NOT NULL DEFAULT 'pending',
   paid_at DATETIME NULL,
