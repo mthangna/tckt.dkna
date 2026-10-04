@@ -1,0 +1,8 @@
+# Cấu hình chứa mật khẩu CSDL – tạo từ config.sample.php
+/config.php
+# Trạng thái chạy
+/storage/install.lock
+/storage/tmp/*
+!/storage/tmp/.gitkeep
+.DS_Store
+*.bak

@@ -1,0 +1,6 @@
+# Chặn truy cập trực tiếp các file cấu hình / thư mục nội bộ
+<FilesMatch "^(config\.php|config\.sample\.php|install\.lock)$">
+  Require all denied
+</FilesMatch>
+Options -Indexes
+AddDefaultCharset UTF-8
